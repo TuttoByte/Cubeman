@@ -2,12 +2,13 @@ package task
 
 import (
 	"context"
-	container2 "github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
 	"io"
 	"math"
 	"os"
 	"time"
+
+	container2 "github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
@@ -26,14 +27,16 @@ const (
 
 type Task struct {
 	ID            uuid.UUID
+	ContainerId   string
 	Name          string
 	State         State
 	Image         string
-	Memory        string
-	Disk          string
+	Memory        int64
+	Disk          int64
+	Cpu           float64
 	ExposedPorts  nat.PortSet
 	PortBind      map[string]string
-	RestartPolicy string
+	RestartPolicy container2.RestartPolicyMode
 	StartTime     time.Time
 	EndTime       time.Time
 }
@@ -60,9 +63,35 @@ type Config struct {
 	RestartPolicy container2.RestartPolicyMode
 }
 
+func NewConfig(t *Task) *Config {
+
+	return &Config{
+		Name:          t.Name,
+		Image:         t.Image,
+		Cpu:           t.Cpu,
+		Disk:          t.Disk,
+		Memory:        t.Memory,
+		RestartPolicy: t.RestartPolicy,
+		ExposedPorts:  t.ExposedPorts,
+	}
+}
+
 type Docker struct {
 	Client *client.Client
 	Config Config
+}
+
+func NewDocker(c *Config) (*Docker, error) {
+	dc, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Docker{
+		dc,
+		*c,
+	}, nil
+
 }
 
 type DockerResult struct {
