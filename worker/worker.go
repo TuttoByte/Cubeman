@@ -3,6 +3,7 @@ package worker
 import (
 	"cube/task"
 	"errors"
+	"fmt"
 	"log"
 	"time"
 
@@ -17,8 +18,40 @@ type Worker struct {
 	TaskCount int
 }
 
-func (w *Worker) RunTask() error {
-	return errors.New("not implemet")
+func (w *Worker) RunTask() task.DockerResult {
+	t := w.Queue.Dequeue()
+	if t == nil {
+		log.Printf("No tasks in queue")
+		return task.DockerResult{
+			Error: nil,
+		}
+	}
+
+	taskInQueue := t.(task.Task)
+
+	taskIn := w.DWatch[taskInQueue.ID]
+	if taskIn == nil {
+		taskIn = &taskInQueue
+		w.DWatch[taskInQueue.ID] = &taskInQueue
+	}
+
+	var result task.DockerResult
+	if task.ValidStateTransition(taskIn.State, taskInQueue.State) {
+		switch taskInQueue.State {
+		case task.Scheduled:
+			result = w.StartTask(taskInQueue)
+		case task.Pending:
+			result = w.StopTask(taskInQueue)
+		default:
+			result.Error = errors.New("Error usage of run")
+		}
+	} else {
+		err := fmt.Errorf("Invalid transition from %v to %v",
+			taskIn.State, taskInQueue.State)
+		result.Error = err
+	}
+	return result
+
 }
 func (w *Worker) StopTask(t task.Task) task.DockerResult {
 	config := task.NewConfig(&t)
