@@ -104,3 +104,13 @@ func (w *Worker) AddTask(t task.Task) {
 func (w *Worker) CollectStats() error {
 	return errors.New("not implement")
 }
+
+func (w *Worker) GetTasks() []*task.Task {
+	var tasks []*task.Task
+
+	for _, v := range w.DWatch {
+		tasks = append(tasks, v)
+	}
+
+	return tasks
+}
