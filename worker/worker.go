@@ -40,7 +40,7 @@ func (w *Worker) RunTask() task.DockerResult {
 		switch taskInQueue.State {
 		case task.Scheduled:
 			result = w.StartTask(taskInQueue)
-		case task.Pending:
+		case task.Completed:
 			result = w.StopTask(taskInQueue)
 		default:
 			result.Error = errors.New("Error usage of run")
@@ -103,4 +103,14 @@ func (w *Worker) AddTask(t task.Task) {
 }
 func (w *Worker) CollectStats() error {
 	return errors.New("not implement")
+}
+
+func (w *Worker) GetTasks() []*task.Task {
+	var tasks []*task.Task
+
+	for _, v := range w.DWatch {
+		tasks = append(tasks, v)
+	}
+
+	return tasks
 }
