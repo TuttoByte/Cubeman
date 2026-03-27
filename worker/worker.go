@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"cube/task"
 	"errors"
 	"fmt"
@@ -15,6 +16,7 @@ type Worker struct {
 	Name      string
 	Queue     queue.Queue
 	DWatch    map[uuid.UUID]*task.Task
+	Stats     *Stats
 	TaskCount int
 }
 
@@ -101,9 +103,6 @@ func (w *Worker) StartTask(t task.Task) task.DockerResult {
 func (w *Worker) AddTask(t task.Task) {
 	w.Queue.Enqueue(t)
 }
-func (w *Worker) CollectStats() error {
-	return errors.New("not implement")
-}
 
 func (w *Worker) GetTasks() []*task.Task {
 	var tasks []*task.Task
@@ -113,4 +112,17 @@ func (w *Worker) GetTasks() []*task.Task {
 	}
 
 	return tasks
+}
+
+func (w *Worker) CollectStats(ctx context.Context) {
+	for {
+		select {
+		case <-time.After(15 * time.Second):
+			log.Printf("Colelcting Stats")
+			w.Stats = GetStats()
+			w.Stats.TotalTaskCount = w.TaskCount
+		case <-ctx.Done():
+			log.Fatal("Context Error")
+		}
+	}
 }
