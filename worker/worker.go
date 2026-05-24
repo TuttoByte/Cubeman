@@ -5,6 +5,9 @@ import (
 	"cube/task"
 	"errors"
 	"fmt"
+	"github.com/docker/go-connections/nat"
+	"github.com/moby/term"
+	"go/types"
 	"log"
 	"time"
 
@@ -123,6 +126,49 @@ func (w *Worker) CollectStats(ctx context.Context) {
 			w.Stats.TotalTaskCount = w.TaskCount
 		case <-ctx.Done():
 			log.Fatal("Context Error")
+		}
+	}
+}
+
+func (w *Worker) InspectTask(t task.Task) task.DockerInspectResponse {
+	config := task.NewConfig(&t)
+	d, err := task.NewDocker(config)
+	if err != nil {
+		return task.DockerInspectResponse{
+			Error: err,
+		}
+	}
+	return d.Inspect(t.ContainerId)
+}
+
+func (w *Worker) UpdateTask(t task.Task) {
+	for {
+		log.Printf("Updating task %v", t.ID)
+		w.
+	}
+}
+
+
+func(w *Worker) updateTask(){
+	for id ,t := range w.DWatch{
+		if t.State == task.Running{
+			resp := w.InspectTask(*t)
+			if resp.Error != nil {
+				fmt.Printf("Error inspecting task %v: %v\n", t.ID, resp.Error)
+			}
+
+
+			if resp.Container == nil{
+				log.Printf("No container found for task %v\n", t.ID)
+				w.DWatch[id].State = task.Failed
+			}
+
+			if resp.Container.State.Status == "exited"{
+				log.Printf("Container for task %s in non-running state %s", id, resp.Container.State.Status)
+				w.DWatch[id].State = task.Failed
+			}
+
+			w.DWatch[id].HostPorts =  resp.Container.NetworkSettings.NetworkSettingsBase.Ports
 		}
 	}
 }
